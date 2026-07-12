@@ -24,13 +24,21 @@ const selfTest = process.argv.includes("--self-test");
 let ok = true;
 
 for (const gate of gates) {
-  const { check } = await import(pathToFileURL(path.join(dir, gate)).href);
-  if (!check) {
-    console.warn(`\n  SKIP — ${gate} exports no \`check\`.`);
-    continue;
+  try {
+    const { check } = await import(pathToFileURL(path.join(dir, gate)).href);
+
+    if (!check) {
+      console.warn(`\n  SKIP - ${gate} exports no \`check\`.`);
+      continue;
+    }
+
+    const passed = selfTest ? check.selfTest() : check.run().ok;
+    ok = passed && ok;
+  } catch (error) {
+    console.error(`\n  FAIL - ${gate} could not complete.`);
+    console.error(error.message);
+    ok = false;
   }
-  const passed = selfTest ? check.selfTest() : check.run().ok;
-  ok = passed && ok;
 }
 
 console.log("");
