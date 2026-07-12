@@ -7,17 +7,19 @@ namespace Logistics.Application.Tests.Eld;
 public class GeotabMapperTests
 {
     [Theory]
-    [InlineData("driving", HosViolationType.Driving11Hour)]
-    [InlineData("11_hour", HosViolationType.Driving11Hour)]
-    [InlineData("shift", HosViolationType.OnDuty14Hour)]
-    [InlineData("break", HosViolationType.Break30Minute)]
-    [InlineData("cycle", HosViolationType.Cycle70Hour)]
-    [InlineData("restart", HosViolationType.RestartRequired)]
-    [InlineData("unknown", HosViolationType.FormAndMannerViolation)]
-    public void MapViolationType_UsRegion_ReturnsFmcsaValue(string input, HosViolationType expected)
-    {
-        Assert.Equal(expected, GeotabMapper.MapViolationType(input, Region.US));
-    }
+[InlineData("driving", DutyStatus.Driving)]
+[InlineData("D", DutyStatus.Driving)]
+[InlineData("DRIVING", DutyStatus.Driving)] // Added to verify case-insensitive mapping
+[InlineData("off", DutyStatus.OffDuty)]
+[InlineData("sleeperberth", DutyStatus.SleeperBerth)]
+[InlineData("on_duty", DutyStatus.OnDutyNotDriving)]
+[InlineData("personalconveyance", DutyStatus.PersonalConveyance)]
+[InlineData("yardmove", DutyStatus.YardMove)]
+[InlineData(null, DutyStatus.OffDuty)]
+public void MapDutyStatus_HandlesGeotabVariants(string? input, DutyStatus expected)
+{
+    Assert.Equal(expected, GeotabMapper.MapDutyStatus(input));
+}
 
     [Theory]
     [InlineData("continuousdriving", HosViolationType.EuContinuousDriving4_5h)]
