@@ -1,0 +1,53 @@
+# Local development infrastructure (replaces the old Aspire dev inner loop).
+#
+# Usage:
+#   docker compose -f deploy/docker-compose.dev.yml up -d   # Postgres, runs the migrator once
+# Then run the apps on the host:
+#   dotnet run --project src/Presentation/Logistics.IdentityServer
+#   dotnet run --project src/Presentation/Logistics.API
+#   bun start:tms   # (and start:admin / start:customer / start:website) from src/Client/Logistics.Angular
+#
+# Postgres: localhost:5433
+
+name: logistics-dev
+
+services:
+  postgres:
+    image: postgres:latest
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "Test12345#"
+      POSTGRES_DB: master_logisticsx
+    ports:
+      - "5433:5432"
+    volumes:
+      - logistics-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot DB migrate + seed. Metadata comes from the DbMigrator's appsettings.json; here we
+  # only force Development (so the image-baked appsettings.Production.json can't load) and point
+  # the DB hosts at `postgres`. Tenant hosts must use Tenants__N__ConnectionString (seeder reads
+  # it before the ConnectionStrings:{Name}TenantDatabase fallback).
+  migrator:
+    build:
+      context: ..
+      dockerfile: src/Presentation/Logistics.DbMigrator/Dockerfile
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__MasterDatabase: "Host=postgres;Port=5432;Database=master_logisticsx;Username=postgres;Password=Test12345#"
+      Tenants__0__ConnectionString: "Host=postgres;Port=5432;Database=us_logisticsx;Username=postgres;Password=Test12345#"
+      Tenants__1__ConnectionString: "Host=postgres;Port=5432;Database=eu_logisticsx;Username=postgres;Password=Test12345#"
+      SuperAdmin__Email: "admin@test.com"
+      SuperAdmin__Password: "Test12345#"
+
+volumes:
+  logistics-pg-data:

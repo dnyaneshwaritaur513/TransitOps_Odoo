@@ -1,0 +1,57 @@
+<ui-card class="h-full">
+  <ng-template #header>
+    <div class="flex items-center gap-2 py-3 pl-4">
+      <ui-icon name="history" size="inherit" class="text-xl text-purple-600" />
+      <h4 class="mb-0">Recent Activity</h4>
+    </div>
+    <ui-divider class="m-0" />
+  </ng-template>
+
+  @if (isLoading()) {
+    <div class="flex flex-col gap-3">
+      @for (_ of [1, 2, 3, 4, 5]; track $index) {
+        <ui-skeleton height="2.5rem" />
+      }
+    </div>
+  } @else if (activities().length === 0) {
+    <div class="text-muted-foreground flex flex-col items-center justify-center py-8 text-center">
+      <ui-icon name="inbox" size="inherit" class="mb-2 text-4xl" />
+      <p>No recent activity</p>
+    </div>
+  } @else {
+    <div class="flex flex-col">
+      @for (activity of activities(); track activity.loadId + activity.action; let last = $last) {
+        <a
+          [routerLink]="['/loads', activity.loadId, 'edit']"
+          class="hover:bg-surface-100 dark:hover:bg-surface-800 flex items-center gap-3 rounded-lg px-2 py-3 transition-colors"
+        >
+          <!-- Icon -->
+          <ui-icon
+            [name]="activity.icon"
+            size="inherit"
+            [class]="activity.iconClass"
+            class="text-lg"
+          />
+
+          <!-- Content -->
+          <div class="min-w-0 flex-1">
+            <span class="text-sm">
+              <span class="text-foreground font-semibold">Load #{{ activity.loadNumber }}</span>
+              <!-- &ngsp; not a plain space: Angular strips whitespace-only text nodes between
+                   elements, and Prettier re-strips a literal one. Without it: "Load #158was delivered". -->
+              <span class="text-muted-foreground">&ngsp;{{ activity.action }}</span>
+            </span>
+          </div>
+
+          <!-- Timestamp -->
+          <span class="text-muted-foreground text-xs whitespace-nowrap">
+            {{ activity.timestamp | relativeTime }}
+          </span>
+        </a>
+        @if (!last) {
+          <div class="border-surface-200 dark:border-surface-700 ml-5 border-l-2 py-1"></div>
+        }
+      }
+    </div>
+  }
+</ui-card>

@@ -1,0 +1,98 @@
+# LogisticsX production stack (plain Docker Compose).
+#
+# Images are pulled from GHCR. GITHUB_REPOSITORY and IMAGE_TAG are appended to .env
+# by the deploy workflow; the defaults below keep manual `docker compose` runs working.
+# All app ports are bound to 127.0.0.1 — the host nginx (deploy/nginx/logisticsx.conf)
+# is the only public entry point and terminates TLS.
+
+name: logistics
+
+services:
+  identity-server:
+    image: "ghcr.io/${GITHUB_REPOSITORY:-suxrobgm/logistics-app}/identity:${IMAGE_TAG:-latest}"
+    # All config/secrets come from .env; entries below are literals not in .env
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      HTTP_PORTS: "${IDENTITY_SERVER_PORT}"
+    ports:
+      - "127.0.0.1:${IDENTITY_SERVER_PORT}:${IDENTITY_SERVER_PORT}"
+    networks:
+      - logistics
+    restart: unless-stopped
+
+  api:
+    image: "ghcr.io/${GITHUB_REPOSITORY:-suxrobgm/logistics-app}/api:${IMAGE_TAG:-latest}"
+    # All config/secrets come from .env; entries below are literals not in .env
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      HTTP_PORTS: "${API_PORT}"
+      IdentityServer__Authority: "http://identity-server:7001"
+      IdentityServer__RequireHttpsMetadata: "false"
+    ports:
+      - "127.0.0.1:${API_PORT}:${API_PORT}"
+    depends_on:
+      identity-server:
+        condition: service_started
+    networks:
+      - logistics
+    restart: unless-stopped
+
+  admin-portal:
+    image: "ghcr.io/${GITHUB_REPOSITORY:-suxrobgm/logistics-app}/admin-portal:${IMAGE_TAG:-latest}"
+    ports:
+      - "127.0.0.1:7002:80"
+    depends_on:
+      api:
+        condition: service_started
+      identity-server:
+        condition: service_started
+    networks:
+      - logistics
+    restart: unless-stopped
+
+  tms-portal:
+    image: "ghcr.io/${GITHUB_REPOSITORY:-suxrobgm/logistics-app}/tms-portal:${IMAGE_TAG:-latest}"
+    environment:
+      MAPBOX_TOKEN: "${Mapbox__AccessToken}"
+    ports:
+      - "127.0.0.1:7003:80"
+    depends_on:
+      api:
+        condition: service_started
+      identity-server:
+        condition: service_started
+    networks:
+      - logistics
+    restart: unless-stopped
+
+  customer-portal:
+    image: "ghcr.io/${GITHUB_REPOSITORY:-suxrobgm/logistics-app}/customer-portal:${IMAGE_TAG:-latest}"
+    ports:
+      - "127.0.0.1:7004:80"
+    depends_on:
+      api:
+        condition: service_started
+      identity-server:
+        condition: service_started
+    networks:
+      - logistics
+    restart: unless-stopped
+
+  website:
+    image: "ghcr.io/${GITHUB_REPOSITORY:-suxrobgm/logistics-app}/website:${IMAGE_TAG:-latest}"
+    ports:
+      - "127.0.0.1:7005:7005"
+    depends_on:
+      api:
+        condition: service_started
+    networks:
+      - logistics
+    restart: unless-stopped
+
+networks:
+  logistics:
+    driver: bridge

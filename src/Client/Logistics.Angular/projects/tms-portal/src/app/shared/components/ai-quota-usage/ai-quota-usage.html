@@ -1,0 +1,27 @@
+<div class="border-default bg-elevated rounded-lg border p-4">
+  <div class="mb-3 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <ui-icon name="zap" class="text-foreground" />
+      <span class="font-semibold">AI Dispatch Usage</span>
+      @if (quota().planName) {
+        <ui-badge size="sm" [value]="quota().planName!" severity="info" />
+      }
+    </div>
+    <div class="flex items-center gap-2">
+      @if (quota().isOverQuota) {
+        <ui-badge value="Overage charges apply" severity="warn" />
+      }
+      @if (quota().resetsAt) {
+        <span class="text-muted-foreground text-sm">
+          Resets {{ quota().resetsAt | date: "EEE, MMM d, h:mm a" }}
+        </span>
+      }
+    </div>
+  </div>
+  <ui-progress
+    height="1.5rem"
+    [value]="Math.round(Math.min((quota().usagePercent ?? 0) * 100, 100))"
+    [showValue]="true"
+    [color]="progressBarColor()"
+  />
+</div>

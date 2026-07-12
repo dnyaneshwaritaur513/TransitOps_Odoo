@@ -1,0 +1,18 @@
+<div class="flex gap-2">
+  <ui-button
+    intent="success"
+    appearance="outlined"
+    size="sm"
+    label="Approve"
+    icon="check"
+    (click)="approve.emit(decision())"
+  />
+  <ui-button
+    intent="danger"
+    appearance="outlined"
+    size="sm"
+    label="Reject"
+    icon="x"
+    (click)="reject.emit(decision())"
+  />
+</div>
